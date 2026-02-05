@@ -1,6 +1,7 @@
 ﻿using Application.Users;
 using AutoMapper;
 using Domain;
+using Domain.UserVMS;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers
@@ -19,7 +20,7 @@ namespace Api.Controllers
         // POST: api/users/Create
         [HttpPost("Create")]
         public async Task<IActionResult> Create([FromBody] UserCreateDto dto)
-            => Ok(await _service.CreateAsync(dto));
+            => Ok(await _service.CreateUserAsync(dto));
 
         // -------------------- UPDATE --------------------
         // PUT: api/users/Update/1
@@ -27,7 +28,7 @@ namespace Api.Controllers
         public async Task<IActionResult> Update(int id, UserUpdateDto dto)
         {
             dto.Id = id;
-            return Ok(await _service.UpdateAsync(dto));
+            return Ok(await _service.UpdateUserAsync(dto));
         }
 
         // -------------------- GET ALL --------------------
@@ -47,5 +48,9 @@ namespace Api.Controllers
         [HttpDelete("Delete/{id:int}")]
         public async Task<IActionResult> Delete(int id)
             => Ok(await _service.DeleteAsync(id));
+        class A
+        {
+
+        }
     }
 }

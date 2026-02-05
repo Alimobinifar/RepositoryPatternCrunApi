@@ -1,54 +1,96 @@
 ﻿using Domain;
+using Domain.BaseAndMainModels;
+using Domain.ResponseModels;
 using Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Common
 {
     public class CrudService<TEntity> where TEntity : BaseEntity
     {
         protected readonly AppDbContext _context;
+
         public CrudService(AppDbContext context)
         {
             _context = context;
         }
 
-        public virtual async Task<List<TEntity>> GetAllAsync()
-            => await _context.Set<TEntity>().Where(t=>!t.IsDeleted).ToListAsync();
-
-        public virtual async Task<TEntity?> GetByIdAsync(int id)
-              => await _context.Set<TEntity>()
-                     .Where(c => !c.IsDeleted && c.Id == id)
-                     .FirstOrDefaultAsync();
-
-        public virtual async Task<TEntity> CreateAsync(TEntity entity)
+        private async Task<ResponseModel<T>> ExecuteAsync<T>(Func<Task<T>> action, string operation)
         {
-            _context.Set<TEntity>().Add(entity);
-            await _context.SaveChangesAsync();
-            return entity;
+            var response = new ResponseModel<T>();
+            try
+            {
+                var data = await action();
+                response.Success = true;
+                response.Data = data;
+                response.Message = $"{operation} executed successfully.";
+            }
+            catch (Exception ex)
+            {
+                response.Success = false;
+                response.Error = $"Error in {operation}: {ex.Message}";
+            }
+
+            return response;
         }
 
-        public virtual async Task<bool> UpdateAsync(TEntity entity)
+        public virtual async Task<ResponseModel<List<TEntity>>> GetAllAsync()
         {
-            var trackedRecord = await _context.Set<TEntity>().FindAsync(entity.Id);
-            if (trackedRecord == null) return false;
-            _context.Entry(trackedRecord).CurrentValues.SetValues(entity);
-            await _context.SaveChangesAsync();
-            return true;
+            return await ExecuteAsync(async () =>
+            {
+                return await _context.Set<TEntity>()
+                                     .Where(t => !t.IsDeleted)
+                                     .ToListAsync();
+            }, nameof(GetAllAsync));
         }
 
-        public virtual async Task DeleteAsync(int id)
+        public virtual async Task<ResponseModel<TEntity?>> GetByIdAsync(int id)
         {
-            var entity = await GetByIdAsync(id);
-            if (entity is null) return;
-            entity.IsDeleted = true;
-            _context.Set<TEntity>().Update(entity);
-            await _context.SaveChangesAsync();
+            return await ExecuteAsync(async () =>
+            {
+                return await _context.Set<TEntity>()
+                                     .Where(t => !t.IsDeleted && t.Id == id )
+                                     .FirstOrDefaultAsync();
+                
+            }, nameof(GetByIdAsync));
         }
+
+        public virtual async Task<ResponseModel<TEntity>> CreateAsync(TEntity entity)
+        {
+            return await ExecuteAsync(async () =>
+            {
+                _context.Set<TEntity>().Add(entity);
+                await _context.SaveChangesAsync();
+                return entity;
+            }, nameof(CreateAsync));
+        }
+
+        public virtual async Task<ResponseModel<bool>> UpdateAsync(TEntity entity)
+        {
+            return await ExecuteAsync(async () =>
+            {
+                var tracked = await _context.Set<TEntity>().FindAsync(entity.Id);
+                if (tracked == null) return false;
+
+                _context.Entry(tracked).CurrentValues.SetValues(entity);
+                await _context.SaveChangesAsync();
+                return true;
+            }, nameof(UpdateAsync));
+        }
+
+        public virtual async Task<ResponseModel<bool>> DeleteAsync(int id)
+        {
+            return await ExecuteAsync(async () =>
+            {
+                var entity = await _context.Set<TEntity>().FindAsync(id);
+                if (entity == null) return false;
+
+                entity.IsDeleted = true;
+                _context.Set<TEntity>().Update(entity);
+                await _context.SaveChangesAsync();
+                return true;
+            }, nameof(DeleteAsync));
+        }
+
     }
 }

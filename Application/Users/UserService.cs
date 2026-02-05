@@ -1,5 +1,7 @@
 ﻿using Application.Common;
-using Domain;
+using Domain.ResponseModels;
+using Domain.UserModels;
+using Domain.UserVMS;
 using Infrastructure;
 using System;
 using System.Collections.Generic;
@@ -13,8 +15,15 @@ namespace Application.Users
     {
         public UserService(AppDbContext context) : base(context) { }
 
-        public async Task<User> CreateAsync(UserCreateDto dto)
+        public async Task<ResponseModel<User>> CreateUserAsync(UserCreateDto dto)
         {
+            if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Email))
+                return new ResponseModel<User>
+                {
+                    Success = false,
+                    Error = "Name and Email are required"
+                };
+
             var user = new User
             {
                 Name = dto.Name,
@@ -22,11 +31,23 @@ namespace Application.Users
                 Email = dto.Email
             };
 
-            return await base.CreateAsync(user);
+            var response = await base.CreateAsync(user);
+
+            if (response.Success)
+                response.Message = "User created successfully";
+
+            return response;
         }
 
-        public async Task<bool> UpdateAsync(UserUpdateDto dto)
+        public async Task<ResponseModel<bool>> UpdateUserAsync(UserUpdateDto dto)
         {
+            if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Email))
+                return new ResponseModel<bool>
+                {
+                    Success = false,
+                    Error = "Name and Email are required"
+                };
+
             var user = new User
             {
                 Id = dto.Id,
@@ -34,28 +55,47 @@ namespace Application.Users
                 Family = dto.Family,
                 Email = dto.Email
             };
-            return await base.UpdateAsync(user);
+            var response =  await base.UpdateAsync(user);
+            if (response.Success)
+                response.Message = "User created succesfully";
+            return response;
         }
 
-        public async Task<List<User>> GetAllAsync()
+        public async Task<ResponseModel<List<User>>> GetAllUsersAsync()
         {
-            return await base.GetAllAsync();
+            var response = await base.GetAllAsync();
+
+            response.Message = response.Success
+                ? "All users retrieved successfully"
+                : response.Message ?? "Failed to retrieve users";
+
+            return response;
         }
 
-        public async Task<User> GetByIdAsync(int id )
+        public async Task<ResponseModel<User?>> GetUserByIdAsync(int id)
         {
-            var result =  await base.GetByIdAsync(id);
-            if (result != null)
-            {
-                return result;
-            }
-            return null;
+            var response = await base.GetByIdAsync(id);
+
+            if (response.Success && response.Data != null)
+                response.Message = $"User {response.Data.Name} retrieved successfully";
+            else if (!response.Success)
+                response.Message ??= "Failed to retrieve user"; // fallback پیام خطا
+
+            return response;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<ResponseModel<bool>> DeleteUserAsync(int id)
         {
-            await base.DeleteAsync(id);
-            return true;
+            var response = await base.DeleteAsync(id);
+            if (response.Success && response.Data)
+                response.Message = "User deleted successfully";
+            else if (response.Success && !response.Data)
+                response.Message = "User not found or already deleted";
+            else
+                response.Message ??= "Failed to delete user";
+
+            return response;
         }
+
     }
 }

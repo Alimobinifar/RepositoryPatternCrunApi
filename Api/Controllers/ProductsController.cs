@@ -1,4 +1,6 @@
 ﻿using Application.Products;
+using Domain.ProductModels;
+using Domain.ProductsVMS;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers
@@ -17,7 +19,7 @@ namespace Api.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(ProductDto dto)
+        public async Task<IActionResult> Create(Product dto)
         {
             var product = await _service.CreateAsync(dto);
             return Ok(product);
@@ -46,10 +48,10 @@ namespace Api.Controllers
             if (product is null)
                 return NotFound();
 
-            product.Title = dto.Title;
-            product.Price = dto.Price;
+            product.Data.Title = dto.Title;
+            product.Data.Price = dto.Price;
 
-            await _service.UpdateAsync(product);
+            await _service.UpdateAsync(product.Data);
             return Ok(product);
         }
 

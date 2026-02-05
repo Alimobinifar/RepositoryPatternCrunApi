@@ -1,4 +1,5 @@
-﻿using Domain;
+﻿using Domain.ProductModels;
+using Domain.UserModels;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

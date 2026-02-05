@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Domain.BaseAndMainModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Domain
+namespace Domain.ProductModels
 {
     public class Product : BaseEntity
     {
